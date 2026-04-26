@@ -2,99 +2,110 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Chat 333 - Realtime</title>
+    <title>Chat 333 | نظام مشفر وحقيقي</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
-        /* التنسيق الأساسي */
-        body { font-family: sans-serif; background: #ece5dd; margin: 0; padding: 0; }
-        #auth, #chat { display: none; flex-direction: column; height: 100vh; }
-        .header { background: #075e54; color: white; padding: 15px; text-align: center; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
-        .msg { padding: 10px; margin: 5px; border-radius: 8px; max-width: 80%; position: relative; }
-        .sent { background: #dcf8c6; align-self: flex-end; }
-        .recv { background: white; align-self: flex-start; }
-        .input-area { background: #f0f0f0; padding: 10px; display: flex; }
-        input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; outline: none; }
-        button { background: #128c7e; color: white; border: none; padding: 10px 20px; margin-right: 5px; border-radius: 20px; cursor: pointer; }
+        :root { --primary: #075e54; --secondary: #128c7e; --bg: #e5ddd5; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #d1d7db; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .container { width: 100%; max-width: 450px; height: 90vh; background: var(--bg); display: flex; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border-radius: 10px; overflow: hidden; }
+        #auth-screen, #chat-screen { display: none; flex-direction: column; height: 100%; }
+        .active { display: flex !important; }
+        .header { background: var(--primary); color: white; padding: 15px; text-align: center; font-size: 18px; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px; border-radius: 10px; max-width: 75%; word-wrap: break-word; position: relative; font-size: 15px; }
+        .sent { background: #dcf8c6; align-self: flex-end; border-bottom-right-radius: 0; }
+        .recv { background: white; align-self: flex-start; border-bottom-left-radius: 0; }
+        .user-label { font-size: 11px; color: #555; display: block; margin-bottom: 3px; font-weight: bold; }
+        .input-area { background: #f0f0f0; padding: 10px; display: flex; gap: 8px; }
+        input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ddd; outline: none; }
+        button { background: var(--secondary); color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        .auth-box { margin: auto; background: white; padding: 30px; border-radius: 15px; text-align: center; width: 80%; }
     </style>
 </head>
 <body>
 
-    <div id="auth" style="display: flex;">
-        <div style="margin: auto; text-align: center; background: white; padding: 30px; border-radius: 10px;">
-            <h2>سجل اسمك للحصول على رقم</h2>
-            <input type="text" id="username" placeholder="اسمك">
-            <button onclick="login()">دخول</button>
+<div class="container">
+    <div id="auth-screen" class="active">
+        <div class="auth-box">
+            <h2 style="color: var(--primary)">Chat 333</h2>
+            <p>ادخل اسمك للحصول على رقم مميز</p>
+            <input type="text" id="userName" placeholder="اكتب اسمك هنا...">
+            <br><br>
+            <button onclick="initChat()">دخول للدردشة</button>
         </div>
     </div>
 
-    <div id="chat">
-        <div class="header" id="myHeader">دردشة</div>
+    <div id="chat-screen">
+        <div class="header" id="headerInfo">دردشة مباشرة</div>
         <div id="messages"></div>
         <div class="input-area">
-            <input type="text" id="msgText" placeholder="اكتب رسالتك هنا...">
+            <input type="text" id="msgInput" placeholder="رسالة مشفرة...">
             <button onclick="send()">إرسال</button>
         </div>
     </div>
+</div>
 
 <script>
-    // --- إعدادات Firebase (ضع بياناتك هنا) ---
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        databaseURL: "YOUR_DATABASE_URL",
-        projectId: "YOUR_PROJECT_ID",
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // تم وضع المفتاح الخاص بك هنا
+    const ABLY_KEY = 'vamcxg.lgORjg:To4g-O91a63EH8inHht8u2NMlprtwPMRQLyh_iqG9b4'; 
+    let ably, channel, myProfile = {};
 
-    let currentUser = {};
+    function initChat() {
+        const name = document.getElementById('userName').value;
+        if (!name) return alert("ادخل اسمك");
 
-    function login() {
-        const name = document.getElementById('username').value;
-        if(!name) return;
-        
-        // توليد رقم ثلاثي عشوائي
-        const ids = [111, 222, 333, 444, 555, 666, 777, 888, 999];
-        const myId = ids[Math.floor(Math.random() * ids.length)];
-        
-        currentUser = { name: name, id: myId };
-        
-        document.getElementById('auth').style.display = 'none';
-        document.getElementById('chat').style.display = 'flex';
-        document.getElementById('myHeader').innerText = `أنت: ${name} (${myId})`;
-        
-        loadMessages();
+        // توليد الرقم الثلاثي المميز (مثلاً 444)
+        const nums = [111, 222, 333, 444, 555, 666, 777, 888, 999];
+        const myId = nums[Math.floor(Math.random() * nums.length)];
+        myProfile = { name: name, id: myId };
+
+        // الاتصال بـ Ably
+        ably = new Ably.Realtime(ABLY_KEY);
+        channel = ably.channels.get('chat-room');
+
+        // استقبال الرسائل
+        channel.subscribe('msg', (payload) => {
+            const data = payload.data;
+            // فك التشفير البسيط (Base64)
+            const decodedText = atob(data.text); 
+            displayMessage(data.senderName, data.senderId, decodedText);
+        });
+
+        document.getElementById('auth-screen').classList.remove('active');
+        document.getElementById('chat-screen').classList.add('active');
+        document.getElementById('headerInfo').innerText = `أنت: ${name} (${myId})`;
     }
 
     function send() {
-        const text = document.getElementById('msgText').value;
-        if(!text) return;
+        const input = document.getElementById('msgInput');
+        const text = input.value;
+        if (!text) return;
 
-        // إرسال البيانات للسيرفر
-        db.ref("global_chat").push({
-            senderId: currentUser.id,
-            senderName: currentUser.name,
-            text: text,
-            time: Date.now()
+        // التشفير قبل الإرسال (Base64)
+        const encodedText = btoa(text); 
+
+        channel.publish('msg', {
+            senderName: myProfile.name,
+            senderId: myProfile.id,
+            text: encodedText
         });
 
-        document.getElementById('msgText').value = "";
+        input.value = '';
     }
 
-    function loadMessages() {
-        // الاستماع للرسائل الجديدة فور وصولها من السيرفر
-        db.ref("global_chat").on("child_added", (snapshot) => {
-            const data = snapshot.val();
-            const msgDiv = document.createElement('div');
-            msgDiv.classList.add('msg');
-            msgDiv.classList.add(data.senderId === currentUser.id ? 'sent' : 'recv');
-            msgDiv.innerHTML = `<b>${data.senderName} (${data.senderId}):</b><br>${data.text}`;
-            document.getElementById('messages').appendChild(msgDiv);
-            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-        });
+    function displayMessage(name, id, text) {
+        const container = document.getElementById('messages');
+        const div = document.createElement('div');
+        const isMe = id === myProfile.id;
+        
+        div.className = `msg ${isMe ? 'sent' : 'recv'}`;
+        div.innerHTML = `<span class="user-label">${name} (${id})</span>${text}`;
+        
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
     }
 </script>
+
 </body>
 </html>
